@@ -5,12 +5,15 @@ using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
 using OutlookService;
+using OutlookService.Entities;
+using OutlookAPIDemo.Models;
 
 namespace OutlookAPIDemo.Controllers
 {
     public class RoomsController : BaseController
     {
         // GET: Rooms
+        [Authorize]
         public async Task<ActionResult> Index()
         {
             string token = await GetAccessToken();
@@ -21,9 +24,30 @@ namespace OutlookAPIDemo.Controllers
             }
 
             OutlookService.OutlookService service = new OutlookService.OutlookService(Apiversion.Beta);
-            var response = await service.MakeApiCall(token, "/Me");
+            var user = await service.GetMe(token);
+            service.SetUser(user.EmailAddress);
 
-            return Content(string.Format("Token: {0}", token));
+            // Get room lists
+            var roomLists = await service.GetRoomLists(token);
+
+            // Get all rooms
+            var allRooms = await service.GetRooms(token);
+
+            // Create the view model
+            RoomView view = new RoomView();
+
+            view.AllRooms = allRooms.Items;
+            view.RoomLists = new List<KeyValuePair<EmailAddress, List<EmailAddress>>>();
+
+            foreach (EmailAddress roomList in roomLists.Items)
+            {
+                // Get the rooms in the list
+                var roomsInList = await service.GetRooms(token, roomList.Address);
+
+                view.RoomLists.Add(new KeyValuePair<EmailAddress, List<EmailAddress>>(roomList, roomsInList.Items));
+            }
+
+            return View(view);
         }
     }
 }

@@ -38,9 +38,16 @@ namespace OutlookAPIDemo.Controllers
                 // Call AcquireTokenSilentAsync, which will return the cached
                 // access token if it has not expired. If it has expired, it will
                 // handle using the refresh token to get a new one.
-                AuthenticationResult result = await cca.AcquireTokenSilentAsync(scopes, cca.Users.First());
+                try
+                {
+                    AuthenticationResult result = await cca.AcquireTokenSilentAsync(scopes, cca.Users.First());
 
-                accessToken = result.AccessToken;
+                    accessToken = result.AccessToken;
+                }
+                catch (Exception)
+                {
+                    // Return null
+                }
             }
 
             return accessToken;

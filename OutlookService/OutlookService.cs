@@ -1,9 +1,11 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using OutlookService.Entities;
 
 namespace OutlookService
 {
@@ -27,6 +29,79 @@ namespace OutlookService
             apiVersion = version.ToString("g").ToLower();
         }
 
+        public void SetUser(string email)
+        {
+            userEmail = email;
+        }
+
+        public async Task<User> GetMe(string accessToken)
+        {
+            var result = await MakeApiCall(accessToken, "/Me");
+
+            if (result.IsSuccessStatusCode)
+            {
+                string response = await result.Content.ReadAsStringAsync();
+
+                var user = JsonConvert.DeserializeObject<User>(response);
+
+                return user;
+            }
+            else
+            {
+                string errorDetail = await result.Content.ReadAsStringAsync();
+                throw new Exception(string.Format("HTTP Status {0}: {1}", result.StatusCode.ToString(),
+                    string.IsNullOrEmpty(errorDetail) ? "" : errorDetail));
+            }
+        }
+
+        public async Task<ItemCollection<EmailAddress>> GetRoomLists(string accessToken, List<KeyValuePair<string, string>> queryParams = null)
+        {
+            string findRoomListsUrl = string.Format("{0}/findroomlists", GetUserSpec());
+
+            var result = await MakeApiCall(accessToken, findRoomListsUrl, queryParams: queryParams);
+
+            if (result.IsSuccessStatusCode)
+            {
+                string response = await result.Content.ReadAsStringAsync();
+
+                var roomLists = JsonConvert.DeserializeObject<ItemCollection<EmailAddress>>(response);
+
+                return roomLists;
+            }
+            else
+            {
+                string errorDetail = await result.Content.ReadAsStringAsync();
+                throw new Exception(string.Format("HTTP Status {0}: {1}", result.StatusCode.ToString(), 
+                    string.IsNullOrEmpty(errorDetail) ? "" : errorDetail));
+            }
+        }
+
+        public async Task<ItemCollection<EmailAddress>> GetRooms(string accessToken, string roomList = null, List<KeyValuePair<string, string>> queryParams = null)
+        {
+            string findRoomsUrl = string.Format("{0}/findrooms", GetUserSpec());
+            if (!string.IsNullOrEmpty(roomList))
+            {
+                findRoomsUrl = string.Format("{0}(roomlist='{1}')", findRoomsUrl, roomList);
+            }
+
+            var result = await MakeApiCall(accessToken, findRoomsUrl, queryParams: queryParams);
+
+            if (result.IsSuccessStatusCode)
+            {
+                string response = await result.Content.ReadAsStringAsync();
+
+                var rooms = JsonConvert.DeserializeObject<ItemCollection<EmailAddress>>(response);
+
+                return rooms;
+            }
+            else
+            {
+                string errorDetail = await result.Content.ReadAsStringAsync();
+                throw new Exception(string.Format("HTTP Status {0}: {1}", result.StatusCode.ToString(),
+                    string.IsNullOrEmpty(errorDetail) ? "" : errorDetail));
+            }
+        }
+
         /// <summary>
         /// Makes a generic API call to the Outlook API
         /// </summary>
@@ -37,6 +112,7 @@ namespace OutlookService
         /// <param name="preferHeaders">A list of key/value paris to add to the <code>Prefer</code> header.</param>
         /// <param name="queryParams">A list of query parameters to add to the API request.</param>
         /// <param name="payload">A JSON payload to add to the request.</param>
+        /// <returns>The HTTP response message.</returns>
         public async Task<HttpResponseMessage> MakeApiCall(string accessToken, string apiUrl, string method = "GET", List<KeyValuePair<string, string>> preferHeaders = null,
             List<KeyValuePair<string, string>> queryParams = null, string payload = null)
         {
@@ -110,6 +186,16 @@ namespace OutlookService
             }
 
             return builder.ToString();
+        }
+
+        private string GetUserSpec()
+        {
+            if (!string.IsNullOrEmpty(userEmail))
+            {
+                return string.Format("/users/{0}", userEmail);
+            }
+
+            return "/Me";
         }
     }
 }

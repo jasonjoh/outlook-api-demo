@@ -1,0 +1,74 @@
+﻿@model OutlookAPIDemo.Models.RoomView
+
+@{
+    ViewBag.Title = "Room View";
+}
+
+<div class="panel panel-default">
+    <div class="panel-body">
+        <ul class="nav nav-tabs" role="tablist">
+            <li role="presentation" class="active"><a href="#allrooms" aria-controls="all rooms" role="tab" data-toggle="tab">All Rooms</a></li>
+            @foreach (var list in Model.RoomLists)
+            {
+                <li role="presentation"><a href="@string.Format("#{0}", list.Key.Name.ToLower().Replace(" ", "-"))" aria-controls="@list.Key.Name" role="tab" data-toggle="tab">@list.Key.Name</a></li>
+            }
+        </ul>
+
+        <div class="tab-content">
+            <div role="tabpanel" class="tab-pane active" id="allrooms">
+                <table class="table">
+                    <tr>
+                        <th>
+                            Room Name
+                        </th>
+                        <th>
+                            Email Address
+                        </th>
+                        <th></th>
+                    </tr>
+
+                    @foreach (var item in Model.AllRooms)
+                    {
+                        <tr>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.Name)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.Address)
+                            </td>
+                        </tr>
+                    }
+                </table>
+            </div>
+            @foreach (var list in Model.RoomLists)
+            {
+                <div role="tabpanel" class="tab-pane" id="@list.Key.Name.ToLower().Replace(" ", "-")">
+                    <table class="table">
+                        <tr>
+                            <th>
+                                Room Name
+                            </th>
+                            <th>
+                                Email Address
+                            </th>
+                            <th></th>
+                        </tr>
+
+                        @foreach (var item in list.Value)
+                        {
+                            <tr>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.Name)
+                                </td>
+                                <td>
+                                    @Html.DisplayFor(modelItem => item.Address)
+                                </td>
+                            </tr>
+                        }
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
